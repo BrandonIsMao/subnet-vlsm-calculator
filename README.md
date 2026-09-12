@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-4f46e5.svg)](LICENSE)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-14b8a6.svg)
 
-A fast, modern subnet calculator and **VLSM (Variable Length Subnet Masking) planner** for network engineers, students and anyone designing IP address plans. It computes IPv4 and IPv6 subnet details instantly and builds optimal subnet allocations from a list of host requirements.
+A fast, modern subnet calculator and **VLSM (Variable Length Subnet Masking) planner** for network engineers, students and anyone designing IP address plans. It computes IPv4 and IPv6 subnet details instantly, builds optimal subnet allocations from a list of host requirements, and helps **migrate IPv4 networks to IPv6**.
 
 **🔗 Live demo:** _coming soon_ <!-- Replace with the Vercel URL after deployment -->
 
@@ -32,6 +32,18 @@ A fast, modern subnet calculator and **VLSM (Variable Length Subnet Masking) pla
 - Visual **address-space map**, utilization summary and the remaining free space expressed as CIDR blocks.
 - Clear validation errors that point at the offending field (e.g. _"Not enough space: the subnets need 484 addresses but 172.16.0.0/24 only has 256"_).
 - Export to CSV or copy as a tab-separated table (pastes straight into Excel / Google Sheets).
+- One click sends the plan to the IPv6 migration tool to build its dual-stack equivalent.
+
+### IPv4 → IPv6 migration
+- **Address translation:** shows every IPv6 representation of an IPv4 address or network, with its RFC, status (current / deprecated / legacy) and caveats:
+  - IPv4-mapped IPv6 (`::ffff:192.0.2.33`) — RFC 4291
+  - NAT64 / DNS64 with the well-known `64:ff9b::/96` or any network-specific prefix (`/32`, `/40`, `/48`, `/56`, `/64`, `/96`) — RFC 6052
+  - 6to4 prefix (`2002:c000:221::/48`) — RFC 3056
+  - ISATAP interface identifier (`fe80::5efe:192.0.2.33`) — RFC 5214
+  - IPv4-compatible IPv6 (`::192.0.2.33`) — deprecated, for reference
+- Warns when a mechanism can't be used with the given address (e.g. 6to4 with a private IPv4, or the NAT64 well-known prefix with non-global addresses).
+- **Dual-stack plan:** assigns a `/64` from your IPv6 site prefix (e.g. a `/48`) to every IPv4 subnet, with suggested IPv4 and IPv6 gateways. Subnet IDs can be sequential or derived from the IPv4 network (`172.16.1.128/26` → `2001:db8:acad:180::/64`), with collision detection.
+- Import subnets directly from the VLSM planner; export the plan to CSV.
 
 ### General
 - 🌐 English / Spanish interface (auto-detected, switchable).
@@ -40,9 +52,9 @@ A fast, modern subnet calculator and **VLSM (Variable Length Subnet Masking) pla
 - ♿ Accessible: keyboard-navigable tabs (WAI-ARIA), labelled inputs, live regions for results and errors.
 - ⚡ No framework, no build step, **zero runtime dependencies**.
 
-| IPv4 calculator | IPv6 calculator | Dark theme |
-| --- | --- | --- |
-| ![IPv4 calculator](docs/screenshots/ipv4.png) | ![IPv6 calculator](docs/screenshots/ipv6.png) | ![Dark theme](docs/screenshots/vlsm-dark.png) |
+| IPv4 calculator | IPv6 calculator | IPv4 → IPv6 migration | Dark theme |
+| --- | --- | --- | --- |
+| ![IPv4 calculator](docs/screenshots/ipv4.png) | ![IPv6 calculator](docs/screenshots/ipv6.png) | ![IPv4 to IPv6 migration](docs/screenshots/migration.png) | ![Dark theme](docs/screenshots/vlsm-dark.png) |
 
 ## Getting started
 
@@ -98,6 +110,31 @@ As a consequence the plan is optimal: the only unavoidable waste is rounding eac
 
 Finally, the leftover range is decomposed into the minimum number of CIDR blocks (`rangeToCidrBlocks`), so the free space is ready to use for future growth.
 
+## How IPv4 → IPv6 migration works
+
+The migration module (`src/core/migration.js`) covers the two questions that come up when moving a network to IPv6.
+
+**"What does this IPv4 address look like in IPv6?"** Most transition mechanisms embed the 32 IPv4 bits at a fixed position of the 128-bit address. IPv4-mapped (`::ffff:0:0/96`) and IPv4-compatible (`::/96`) place them in the last 32 bits; 6to4 places them right after `2002::/16`, producing a `/48` per public IPv4 address; ISATAP places them in the interface identifier after `5efe`.
+
+NAT64 is the interesting case. RFC 6052 lets operators use their own prefix of 32–96 bits, and **bits 64–71 (the "u" octet) must always stay zero**, so the IPv4 address is split around them. For `192.0.2.33` (`c0.00.02.21`):
+
+```
+Prefix /32  2001:db8:[c000:0221]:[00]..              → 2001:db8:c000:221::
+Prefix /40  2001:db8:01[c0:0002]:[00][21]..          → 2001:db8:1c0:2:21::
+Prefix /48  2001:db8:0122:[c000]:[00][02:21]..       → 2001:db8:122:c000:2:2100::
+Prefix /64  2001:db8:0122:0344:[00][c0:0002:21]..    → 2001:db8:122:344:c0:2:2100:0
+Prefix /96  2001:db8:0122:0344::[c000:0221]          → 2001:db8:122:344::192.0.2.33
+```
+
+The implementation writes the IPv4 bits one by one starting at the prefix length and jumps from bit 64 to bit 72. The same walk gives the prefix length of an embedded **network**: a `/24` under a `/56` prefix becomes a `/88`, because 8 bits come before the u-octet and 16 after it. The official RFC 6052 examples are part of the test suite.
+
+**"How do I address my existing subnets in IPv6?"** The recommended migration path is dual-stack: every IPv4 subnet keeps its addressing and also gets an IPv6 `/64` (the standard size for a LAN segment). With a site prefix of length _p_ there are 2^(64 − _p_) subnet IDs; a `/48` gives 65,536. The planner supports two strategies:
+
+| Strategy | Subnet ID | Example (`2001:db8:acad::/48`) | Trade-off |
+| --- | --- | --- | --- |
+| Sequential | 0, 1, 2… in list order | `172.16.1.128/26` → `2001:db8:acad:2::/64` | Densest packing, never collides |
+| Derived from IPv4 | Low bits of the IPv4 network address | `172.16.1.128/26` → `2001:db8:acad:180::/64` | Easy to correlate both plans; collisions are detected and reported |
+
 ## Project structure
 
 ```
@@ -108,6 +145,7 @@ Finally, the leftover range is decomposed into the minimum number of CIDR blocks
 │   │   ├── errors.js        # ValidationError with i18n-friendly codes
 │   │   ├── ipv4.js          # Parsing, masks, subnet math, classification
 │   │   ├── ipv6.js          # BigInt-based IPv6 parsing, RFC 5952 formatting
+│   │   ├── migration.js     # IPv4 → IPv6 translation (RFC 6052…) and dual-stack planning
 │   │   └── vlsm.js          # VLSM planner
 │   ├── i18n/                # Tiny translation layer + en/es dictionaries
 │   ├── ui/                  # DOM rendering for each panel, tabs, theme, helpers

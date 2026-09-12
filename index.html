@@ -100,6 +100,9 @@
         <button type="button" class="tabs__tab" role="tab" id="tab-vlsm" data-tab="vlsm" aria-controls="panel-vlsm" aria-selected="false" tabindex="-1">
           <span data-i18n="tabs.vlsm">VLSM Planner</span>
         </button>
+        <button type="button" class="tabs__tab" role="tab" id="tab-migration" data-tab="migration" aria-controls="panel-migration" aria-selected="false" tabindex="-1">
+          <span data-i18n="tabs.migration">IPv4 → IPv6</span>
+        </button>
       </div>
 
       <!-- IPv4 subnet calculator -->
@@ -196,6 +199,93 @@
         </form>
 
         <div id="vlsm-results" class="results" aria-live="polite"></div>
+      </section>
+
+      <!-- IPv4 → IPv6 migration -->
+      <section id="panel-migration" class="panel" role="tabpanel" aria-labelledby="tab-migration" tabindex="0" hidden>
+        <header class="panel-heading">
+          <h2 data-i18n="migration.translateTitle">Address translation</h2>
+          <p data-i18n="migration.translateSubtitle">See how an IPv4 address or network is represented by each IPv6 transition mechanism.</p>
+        </header>
+
+        <form id="migration-translate-form" class="card form" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label" for="migration-ipv4" data-i18n="migration.ipv4Label">IPv4 address or network</label>
+              <input id="migration-ipv4" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="192.0.2.33" aria-describedby="migration-ipv4-hint migration-ipv4-error" />
+              <p id="migration-ipv4-error" class="field__error" role="alert" hidden></p>
+              <p id="migration-ipv4-hint" class="field__hint" data-i18n="migration.ipv4Hint">A single address (192.0.2.33) or a network in CIDR notation (192.0.2.0/24).</p>
+            </div>
+            <div class="field">
+              <label class="field__label" for="migration-nat64" data-i18n="migration.nat64Label">NAT64 prefix</label>
+              <input id="migration-nat64" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="64:ff9b::/96" aria-describedby="migration-nat64-hint migration-nat64-error" />
+              <p id="migration-nat64-error" class="field__error" role="alert" hidden></p>
+              <p id="migration-nat64-hint" class="field__hint" data-i18n="migration.nat64Hint">Well-known 64:ff9b::/96 or your network-specific prefix (/32, /40, /48, /56, /64 or /96).</p>
+            </div>
+          </div>
+
+          <div class="examples">
+            <span class="examples__label" data-i18n="common.tryExample">Try</span>
+            <button type="button" class="chip mono" data-example="8.8.8.8">8.8.8.8</button>
+            <button type="button" class="chip mono" data-example="192.168.10.0/24">192.168.10.0/24</button>
+            <button type="button" class="chip mono" data-example="10.20.30.40">10.20.30.40</button>
+            <button type="button" class="chip mono" data-example="203.0.113.0/26">203.0.113.0/26</button>
+          </div>
+        </form>
+
+        <div id="migration-translate-results" class="results" aria-live="polite"></div>
+
+        <header class="panel-heading panel-heading--spaced">
+          <h2 data-i18n="migration.planTitle">Dual-stack addressing plan</h2>
+          <p data-i18n="migration.planSubtitle">Assign an IPv6 /64 to every IPv4 subnet so both protocols can run side by side during the migration.</p>
+        </header>
+
+        <form id="migration-plan-form" class="card form" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <div class="field__row">
+                <label class="field__label" for="migration-site" data-i18n="migration.siteLabel">IPv6 site prefix</label>
+                <span id="migration-site-capacity" class="field__meta"></span>
+              </div>
+              <input id="migration-site" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="2001:db8:acad::/48" aria-describedby="migration-site-hint migration-site-error" />
+              <p id="migration-site-error" class="field__error" role="alert" hidden></p>
+              <p id="migration-site-hint" class="field__hint" data-i18n="migration.siteHint">The block assigned by your ISP or RIR, typically a /48 or /56.</p>
+            </div>
+
+            <fieldset class="field choice-field">
+              <legend class="field__label" data-i18n="migration.strategyLabel">Subnet ID strategy</legend>
+              <div class="choice-group">
+                <label class="choice">
+                  <input type="radio" name="strategy" value="sequential" checked />
+                  <span data-i18n="migration.strategy.sequential">Sequential</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="strategy" value="ipv4Embedded" />
+                  <span data-i18n="migration.strategy.ipv4Embedded">Derived from IPv4</span>
+                </label>
+              </div>
+              <p id="migration-strategy-hint" class="field__hint" aria-live="polite"></p>
+            </fieldset>
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="migration-subnets" data-i18n="migration.subnetsLabel">IPv4 subnets</label>
+            <textarea id="migration-subnets" class="input textarea mono" rows="6" spellcheck="false" placeholder="Sales, 192.168.10.0/25" aria-describedby="migration-subnets-hint"></textarea>
+            <p id="migration-subnets-hint" class="field__hint" data-i18n="migration.subnetsHint">One per line: name, network (e.g. Sales, 192.168.10.0/25). Names are optional.</p>
+          </div>
+
+          <p id="migration-plan-error" class="alert" role="alert" hidden></p>
+
+          <div class="form__actions">
+            <div class="button-row">
+              <button type="button" id="migration-import" class="button button--ghost" data-i18n="migration.importVlsm" disabled>Import VLSM plan</button>
+              <button type="button" id="migration-example" class="button button--ghost" data-i18n="migration.loadExample">Load example</button>
+            </div>
+            <button type="submit" class="button button--primary" data-i18n="migration.generate">Generate plan</button>
+          </div>
+        </form>
+
+        <div id="migration-plan-results" class="results" aria-live="polite"></div>
       </section>
     </main>
 

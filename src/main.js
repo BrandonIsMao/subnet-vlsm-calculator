@@ -2,6 +2,7 @@ import { getLanguage, initI18n, onLanguageChange, setLanguage } from './i18n/ind
 import { setupCopyButtons } from './ui/dom.js';
 import { initIPv4Panel } from './ui/ipv4-panel.js';
 import { initIPv6Panel } from './ui/ipv6-panel.js';
+import { initMigrationPanel } from './ui/migration-panel.js';
 import { initTabs } from './ui/tabs.js';
 import { initThemeToggle } from './ui/theme.js';
 import { initVLSMPanel } from './ui/vlsm-panel.js';
@@ -22,4 +23,6 @@ initTabs();
 setupCopyButtons();
 initIPv4Panel();
 initIPv6Panel();
+// Before the VLSM panel, so it receives the initial plan event.
+initMigrationPanel();
 initVLSMPanel();

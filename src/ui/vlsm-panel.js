@@ -2,7 +2,12 @@ import { formatIPv4, parseIPv4Cidr } from '../core/ipv4.js';
 import { planVLSM, prefixForHosts } from '../core/vlsm.js';
 import { formatNumber, getLanguage, onLanguageChange, t } from '../i18n/index.js';
 import { statItem } from './components.js';
-import { copyToClipboard, errorMessage, escapeHtml, flashCopied, setFieldError } from './dom.js';
+import { copyToClipboard, downloadCsv, errorMessage, escapeHtml, flashCopied, setFieldError, toTsv } from './dom.js';
+
+/** Fired after every calculation with the plan's subnets (or null when there is no valid plan). */
+export const VLSM_PLAN_EVENT = 'vlsm:plan';
+/** Fired when the user asks to turn the current plan into a dual-stack IPv6 plan. */
+export const VLSM_MIGRATE_EVENT = 'vlsm:migrate';
 
 const SEGMENT_COLORS = 8;
 const DEFAULT_BASE = '172.16.0.0/23';
@@ -52,11 +57,11 @@ function planToRows(plan) {
 }
 
 /**
- * @param {string[][]} rows
+ * @param {Plan} plan
+ * @returns {{ name: string, network: number, prefix: number }[]}
  */
-function toCsv(rows) {
-  const escapeCell = (cell) => (/[",\n;]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell);
-  return rows.map((row) => row.map(escapeCell).join(',')).join('\r\n');
+function planToSubnets(plan) {
+  return plan.allocations.map(({ name, network, prefix }) => ({ name, network, prefix }));
 }
 
 /**
@@ -135,6 +140,9 @@ function renderTable(plan) {
           </button>
           <button type="button" class="button button--ghost button--small" data-action="export-csv">
             ${escapeHtml(t('vlsm.exportCsv'))}
+          </button>
+          <button type="button" class="button button--accent button--small" data-action="migrate">
+            ${escapeHtml(t('vlsm.migrate'))}
           </button>
         </div>
       </div>
@@ -313,25 +321,16 @@ export function initVLSMPanel() {
       currentPlan = planVLSM(baseInput.value, requirements);
       results.innerHTML = renderPlan(currentPlan, baseInput.value);
       results.classList.remove('is-stale');
+      document.dispatchEvent(new CustomEvent(VLSM_PLAN_EVENT, { detail: planToSubnets(currentPlan) }));
     } catch (caught) {
       currentPlan = null;
+      document.dispatchEvent(new CustomEvent(VLSM_PLAN_EVENT, { detail: null }));
       if (!highlightErrorField(caught)) {
         formError.textContent = errorMessage(caught);
         formError.hidden = false;
       }
       results.classList.add('is-stale');
     }
-  };
-
-  const exportCsv = () => {
-    if (!currentPlan) return;
-    // The BOM makes Excel open UTF-8 files (accented names) correctly.
-    const blob = new Blob(['\uFEFF', toCsv(planToRows(currentPlan))], { type: 'text/csv;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `vlsm-plan-${formatIPv4(currentPlan.baseNetwork)}-${currentPlan.basePrefix}.csv`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 0);
   };
 
   form.addEventListener('submit', (event) => {
@@ -383,6 +382,7 @@ export function initVLSMPanel() {
     rowsContainer.replaceChildren();
     addRow();
     currentPlan = null;
+    document.dispatchEvent(new CustomEvent(VLSM_PLAN_EVENT, { detail: null }));
     results.replaceChildren();
     formError.hidden = true;
     setFieldError(baseInput, baseError, null);
@@ -392,12 +392,14 @@ export function initVLSMPanel() {
     const button = event.target instanceof Element ? event.target.closest('[data-action]') : null;
     if (!(button instanceof HTMLElement) || !currentPlan) return;
 
-    if (button.dataset.action === 'export-csv') exportCsv();
+    if (button.dataset.action === 'export-csv') {
+      downloadCsv(`vlsm-plan-${formatIPv4(currentPlan.baseNetwork)}-${currentPlan.basePrefix}.csv`, planToRows(currentPlan));
+    }
     if (button.dataset.action === 'copy-table') {
-      const tsv = planToRows(currentPlan)
-        .map((row) => row.join('\t'))
-        .join('\n');
-      if (await copyToClipboard(tsv)) flashCopied(button);
+      if (await copyToClipboard(toTsv(planToRows(currentPlan)))) flashCopied(button);
+    }
+    if (button.dataset.action === 'migrate') {
+      document.dispatchEvent(new CustomEvent(VLSM_MIGRATE_EVENT, { detail: planToSubnets(currentPlan) }));
     }
   });
 

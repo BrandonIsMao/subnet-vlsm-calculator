@@ -108,6 +108,39 @@ export function flashCopied(button) {
 }
 
 /**
+ * @param {string[][]} rows
+ * @returns {string} RFC 4180 CSV.
+ */
+function toCsv(rows) {
+  const escapeCell = (cell) => (/[",\n;]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell);
+  return rows.map((row) => row.map(escapeCell).join(',')).join('\r\n');
+}
+
+/**
+ * Downloads a table as a CSV file.
+ *
+ * @param {string} filename
+ * @param {string[][]} rows
+ */
+export function downloadCsv(filename, rows) {
+  // The BOM makes Excel open UTF-8 files (accented names) correctly.
+  const blob = new Blob(['\uFEFF', toCsv(rows)], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 0);
+}
+
+/**
+ * @param {string[][]} rows
+ * @returns {string} Tab-separated text that pastes into spreadsheets as a table.
+ */
+export function toTsv(rows) {
+  return rows.map((row) => row.join('\t')).join('\n');
+}
+
+/**
  * Delegated click handler for every `[data-copy]` button on the page.
  */
 export function setupCopyButtons() {

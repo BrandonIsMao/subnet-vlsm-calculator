@@ -1,5 +1,5 @@
 import { ValidationError } from './errors.js';
-import { parseIPv4 } from './ipv4.js';
+import { formatIPv4, parseIPv4 } from './ipv4.js';
 
 /**
  * IPv6 addresses are 128-bit values, far beyond the 53 bits a JavaScript
@@ -83,15 +83,13 @@ function toGroups(address) {
 }
 
 /**
- * Formats an address following RFC 5952: lowercase, no leading zeros and the
- * longest run (2+ groups) of zeros compressed to "::".
+ * Joins hexadecimal groups, compressing the longest run (2+ groups) of zeros
+ * to "::" as required by RFC 5952 (the first run wins a tie).
  *
- * @param {bigint} address
+ * @param {number[]} groups
  * @returns {string}
  */
-export function formatIPv6(address) {
-  const groups = toGroups(address);
-
+function compressGroups(groups) {
   let bestStart = -1;
   let bestLength = 0;
   let runStart = -1;
@@ -114,6 +112,30 @@ export function formatIPv6(address) {
   const head = hex.slice(0, bestStart).join(':');
   const tail = hex.slice(bestStart + bestLength).join(':');
   return `${head}::${tail}`;
+}
+
+/**
+ * Formats an address following RFC 5952: lowercase, no leading zeros and the
+ * longest run of zero groups compressed.
+ *
+ * @param {bigint} address
+ * @returns {string}
+ */
+export function formatIPv6(address) {
+  return compressGroups(toGroups(address));
+}
+
+/**
+ * Formats an address with its last 32 bits in dotted-decimal notation, the
+ * recommended form for addresses that embed IPv4 (e.g. "::ffff:192.0.2.1").
+ *
+ * @param {bigint} address
+ * @returns {string}
+ */
+export function formatIPv6Mixed(address) {
+  const head = compressGroups(toGroups(address).slice(0, 6));
+  const ipv4 = formatIPv4(Number(address & 0xffffffffn));
+  return head.endsWith('::') ? `${head}${ipv4}` : `${head}:${ipv4}`;
 }
 
 /**
@@ -167,14 +189,14 @@ const SPECIAL_RANGES = [
   ['2000::/3', 'globalUnicast'],
 ].map(([cidr, scope]) => {
   const { address, prefix } = parseIPv6Cidr(cidr);
-  return { network: address, mask: prefixToMask(prefix), scope };
+  return { network: address, mask: prefixToIPv6Mask(prefix), scope };
 });
 
 /**
  * @param {number} prefix
  * @returns {bigint}
  */
-function prefixToMask(prefix) {
+export function prefixToIPv6Mask(prefix) {
   const hostBits = BigInt(IPV6_BITS - prefix);
   return MAX_ADDRESS ^ ((1n << hostBits) - 1n);
 }
@@ -195,7 +217,7 @@ export function getIPv6Scope(address) {
 export function calculateIPv6Subnet(address, prefix) {
   const hostBits = IPV6_BITS - prefix;
   const totalAddresses = 1n << BigInt(hostBits);
-  const network = address & prefixToMask(prefix);
+  const network = address & prefixToIPv6Mask(prefix);
 
   return {
     address,
