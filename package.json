@@ -1,0 +1,30 @@
+{
+  "name": "subnet-vlsm-calculator",
+  "version": "1.0.0",
+  "description": "IPv4/IPv6 subnet calculator and VLSM planner for network engineers. Zero dependencies, vanilla JavaScript.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": "Brandon Jimenez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrandonIsMao/subnet-vlsm-calculator.git"
+  },
+  "keywords": [
+    "subnet",
+    "cidr",
+    "vlsm",
+    "ipv4",
+    "ipv6",
+    "networking",
+    "calculator"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.js",
+    "start": "node scripts/serve.js",
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Subnet &amp; VLSM Calculator</title>
+    <meta
+      name="description"
+      content="Free IPv4/IPv6 subnet calculator and VLSM planner. Get network, broadcast, host ranges and optimal variable-length subnet allocations instantly."
+    />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content="Subnet &amp; VLSM Calculator" />
+    <meta property="og:description" content="IPv4/IPv6 subnet calculator and VLSM planner for network engineers." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="src/styles/main.css" />
+
+    <script>
+      // Apply the saved or system theme before first paint to avoid a flash.
+      (() => {
+        let theme = null;
+        try {
+          theme = localStorage.getItem('svc.theme');
+        } catch {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <script type="module" src="src/main.js"></script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="./" aria-label="Subnet &amp; VLSM Calculator">
+          <svg class="brand__logo" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" class="brand__logo-bg" />
+            <rect x="7" y="7" width="18" height="5" rx="1.5" class="brand__logo-a" />
+            <rect x="7" y="14" width="11" height="5" rx="1.5" class="brand__logo-b" />
+            <rect x="20" y="14" width="5" height="5" rx="1.5" class="brand__logo-c" />
+            <rect x="7" y="21" width="7" height="4" rx="1.5" class="brand__logo-c" />
+            <rect x="16" y="21" width="3" height="4" rx="1" class="brand__logo-b" />
+          </svg>
+          <span class="brand__name">Subnet<span class="brand__amp">&amp;</span>VLSM</span>
+        </a>
+
+        <div class="site-header__actions">
+          <div class="segmented" role="group" data-i18n-aria-label="header.language" aria-label="Language">
+            <button type="button" class="segmented__option" data-lang="en" aria-pressed="true">EN</button>
+            <button type="button" class="segmented__option" data-lang="es" aria-pressed="false">ES</button>
+          </div>
+
+          <button type="button" id="theme-toggle" class="icon-button" data-i18n-aria-label="header.toggleTheme" data-i18n-title="header.toggleTheme" aria-label="Toggle color theme">
+            <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+            </svg>
+          </button>
+
+          <a class="icon-button" href="https://github.com/BrandonIsMao/subnet-vlsm-calculator" target="_blank" rel="noopener noreferrer" data-i18n-aria-label="header.sourceCode" data-i18n-title="header.sourceCode" aria-label="Source code on GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="icon-fill">
+              <path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="container">
+      <section class="hero">
+        <p class="hero__eyebrow" data-i18n="hero.eyebrow">Network planning toolkit</p>
+        <h1 class="hero__title" data-i18n="hero.title">Subnet &amp; VLSM Calculator</h1>
+        <p class="hero__subtitle" data-i18n="hero.subtitle">
+          Calculate IPv4 and IPv6 subnets instantly and plan variable-length subnet allocations without wasting a single address.
+        </p>
+      </section>
+
+      <div class="tabs" role="tablist" data-i18n-aria-label="tabs.label" aria-label="Calculators">
+        <button type="button" class="tabs__tab" role="tab" id="tab-ipv4" data-tab="ipv4" aria-controls="panel-ipv4" aria-selected="true">
+          <span data-i18n="tabs.ipv4">IPv4 Subnet</span>
+        </button>
+        <button type="button" class="tabs__tab" role="tab" id="tab-ipv6" data-tab="ipv6" aria-controls="panel-ipv6" aria-selected="false" tabindex="-1">
+          <span data-i18n="tabs.ipv6">IPv6 Prefix</span>
+        </button>
+        <button type="button" class="tabs__tab" role="tab" id="tab-vlsm" data-tab="vlsm" aria-controls="panel-vlsm" aria-selected="false" tabindex="-1">
+          <span data-i18n="tabs.vlsm">VLSM Planner</span>
+        </button>
+      </div>
+
+      <!-- IPv4 subnet calculator -->
+      <section id="panel-ipv4" class="panel" role="tabpanel" aria-labelledby="tab-ipv4" tabindex="0">
+        <form class="card form" novalidate>
+          <div class="field">
+            <label class="field__label" for="ipv4-input" data-i18n="ipv4.inputLabel">IP address and subnet mask</label>
+            <input id="ipv4-input" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="192.168.1.10/24" aria-describedby="ipv4-hint ipv4-error" />
+            <p id="ipv4-error" class="field__error" role="alert" hidden></p>
+            <p id="ipv4-hint" class="field__hint" data-i18n="ipv4.inputHint">CIDR notation (192.168.1.10/24) or a dotted mask (192.168.1.10 255.255.255.0).</p>
+          </div>
+
+          <div class="field">
+            <div class="field__row">
+              <label class="field__label" for="ipv4-prefix" data-i18n="ipv4.prefixSlider">Prefix length</label>
+              <output id="ipv4-prefix-output" class="slider-output mono" for="ipv4-prefix">/24</output>
+            </div>
+            <input id="ipv4-prefix" class="slider" type="range" min="0" max="32" step="1" value="24" />
+          </div>
+
+          <div class="examples">
+            <span class="examples__label" data-i18n="common.tryExample">Try</span>
+            <button type="button" class="chip mono" data-example="10.0.0.1/8">10.0.0.1/8</button>
+            <button type="button" class="chip mono" data-example="172.16.45.200 255.255.240.0">172.16.45.200 255.255.240.0</button>
+            <button type="button" class="chip mono" data-example="192.168.1.130/25">192.168.1.130/25</button>
+            <button type="button" class="chip mono" data-example="203.0.113.9/30">203.0.113.9/30</button>
+          </div>
+        </form>
+
+        <div id="ipv4-results" class="results" aria-live="polite"></div>
+      </section>
+
+      <!-- IPv6 prefix calculator -->
+      <section id="panel-ipv6" class="panel" role="tabpanel" aria-labelledby="tab-ipv6" tabindex="0" hidden>
+        <form class="card form" novalidate>
+          <div class="field">
+            <label class="field__label" for="ipv6-input" data-i18n="ipv6.inputLabel">IPv6 address and prefix</label>
+            <input id="ipv6-input" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="2001:db8::/32" aria-describedby="ipv6-hint ipv6-error" />
+            <p id="ipv6-error" class="field__error" role="alert" hidden></p>
+            <p id="ipv6-hint" class="field__hint" data-i18n="ipv6.inputHint">Full or compressed notation with a prefix length, e.g. 2001:db8::/32.</p>
+          </div>
+
+          <div class="examples">
+            <span class="examples__label" data-i18n="common.tryExample">Try</span>
+            <button type="button" class="chip mono" data-example="2001:db8::/32">2001:db8::/32</button>
+            <button type="button" class="chip mono" data-example="fe80::1ff:fe23:4567:890a/64">fe80::1ff:fe23:4567:890a/64</button>
+            <button type="button" class="chip mono" data-example="fd00:abcd:1234::/56">fd00:abcd:1234::/56</button>
+            <button type="button" class="chip mono" data-example="::ffff:192.0.2.1/128">::ffff:192.0.2.1/128</button>
+          </div>
+        </form>
+
+        <div id="ipv6-results" class="results" aria-live="polite"></div>
+      </section>
+
+      <!-- VLSM planner -->
+      <section id="panel-vlsm" class="panel" role="tabpanel" aria-labelledby="tab-vlsm" tabindex="0" hidden>
+        <form id="vlsm-form" class="card form" novalidate>
+          <div class="field">
+            <div class="field__row">
+              <label class="field__label" for="vlsm-base" data-i18n="vlsm.baseLabel">Base network</label>
+              <span id="vlsm-capacity" class="field__meta"></span>
+            </div>
+            <input id="vlsm-base" class="input input--large mono" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="192.168.0.0/24" aria-describedby="vlsm-base-hint vlsm-base-error" />
+            <p id="vlsm-base-error" class="field__error" role="alert" hidden></p>
+            <p id="vlsm-base-hint" class="field__hint" data-i18n="vlsm.baseHint">The address block to divide, e.g. 192.168.0.0/24.</p>
+          </div>
+
+          <fieldset class="requirements">
+            <legend class="field__label" data-i18n="vlsm.requirementsTitle">Required subnets</legend>
+            <p class="field__hint" data-i18n="vlsm.requirementsHint">Order does not matter — subnets are sorted from largest to smallest automatically.</p>
+
+            <div class="req-header" aria-hidden="true">
+              <span>#</span>
+              <span data-i18n="vlsm.nameLabel">Subnet name</span>
+              <span data-i18n="vlsm.hostsLabel">Hosts needed</span>
+            </div>
+            <div id="vlsm-rows" class="req-list"></div>
+
+            <button type="button" id="vlsm-add" class="button button--dashed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span data-i18n="vlsm.addSubnet">Add subnet</span>
+            </button>
+          </fieldset>
+
+          <p id="vlsm-error" class="alert" role="alert" hidden></p>
+
+          <div class="form__actions">
+            <div class="button-row">
+              <button type="button" id="vlsm-example" class="button button--ghost" data-i18n="vlsm.loadExample">Load example</button>
+              <button type="button" id="vlsm-clear" class="button button--ghost" data-i18n="vlsm.clear">Clear</button>
+            </div>
+            <button type="submit" class="button button--primary" data-i18n="vlsm.calculate">Calculate plan</button>
+          </div>
+        </form>
+
+        <div id="vlsm-results" class="results" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <span>© 2026 Brandon Jimenez · MIT License</span>
+        <a href="https://github.com/BrandonIsMao/subnet-vlsm-calculator" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </footer>
+  </body>
+</html>
