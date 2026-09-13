@@ -3,10 +3,11 @@
 [![CI](https://github.com/BrandonIsMao/subnet-vlsm-calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/BrandonIsMao/subnet-vlsm-calculator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-4f46e5.svg)](LICENSE)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-14b8a6.svg)
+[![Deployed on Vercel](https://img.shields.io/badge/deployed%20on-Vercel-000000.svg?logo=vercel)](https://subnet-vlsm-calculator.vercel.app/)
 
 A fast, modern subnet calculator and **VLSM (Variable Length Subnet Masking) planner** for network engineers, students and anyone designing IP address plans. It computes IPv4 and IPv6 subnet details instantly, builds optimal subnet allocations from a list of host requirements, and helps **migrate IPv4 networks to IPv6**.
 
-**🔗 Live demo:** _coming soon_ <!-- Replace with the Vercel URL after deployment -->
+**🔗 Live demo: [subnet-vlsm-calculator.vercel.app](https://subnet-vlsm-calculator.vercel.app/)**
 
 ![VLSM planner](docs/screenshots/vlsm.png)
 
@@ -173,6 +174,8 @@ The implementation writes the IPv4 bits one by one starting at the prefix length
 ## Deployment
 
 The site is static, so it deploys to any static host without a build step.
+
+The production site is hosted on Vercel at **https://subnet-vlsm-calculator.vercel.app/**.
 
 **Vercel (recommended):** import the repository at [vercel.com/new](https://vercel.com/new), choose the **Other** framework preset, leave the build command empty and the output directory as the project root, then deploy. `vercel.json` adds security and caching headers. Every push to `main` redeploys automatically and every pull request gets a preview URL.
 

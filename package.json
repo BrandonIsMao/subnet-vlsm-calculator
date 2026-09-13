@@ -6,6 +6,7 @@
   "private": true,
   "license": "MIT",
   "author": "Brandon Jimenez",
+  "homepage": "https://subnet-vlsm-calculator.vercel.app/",
   "repository": {
     "type": "git",
     "url": "https://github.com/BrandonIsMao/subnet-vlsm-calculator.git"
